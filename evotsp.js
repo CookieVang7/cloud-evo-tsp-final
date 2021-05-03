@@ -394,7 +394,7 @@
         url: url,
         contentType: 'application/json', //type of info sent to the database
 
-        success: (cityData) => callback(null, cityData),
+        //success: (cityData) => callback(null, cityData),
         error: function ajaxError(jqXHR, textStatus, errorThrown) {
             console.error(
                 'Error getting route details by Id: ', 
@@ -404,7 +404,7 @@
             console.error('Response: ', jqXHR.responseText);
             alert('An error occurred when getting city data:\n' + jqXHR.responseText);
         }
-    })
+    }).done((cityData) => callback(null, cityData))
   }
 
   ////////////////////////////////////////////////////////////
