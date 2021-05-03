@@ -387,7 +387,7 @@
   // that information. Make sure you pass `callback` as the `success` callback
   // function in the Ajax call.
   function fetchCityData(callback) {
-    const url = baseUrl + '/cityDistance_data'; 
+    const url = baseUrl + '/city-data'; //should be the same name as the resource created during the API setup
     console.log("Here is the url: " + url);
     $.ajax({ 
         method: 'GET',
@@ -404,7 +404,7 @@
             console.error('Response: ', jqXHR.responseText);
             alert('An error occurred when getting city data:\n' + jqXHR.responseText);
         }
-    }).done((cityData) => callback(null, cityData.Item.cities))
+    }).done((cityData) => callback(null, cityData))
   }
 
   ////////////////////////////////////////////////////////////
