@@ -120,24 +120,46 @@
   }
 
   function randomRoute(runId, generation, cb) {
-    AWSAjax(
-      {
-        runId: runId,
-        generation: generation,
-        lengthStoreThreshold: lengthStoreThreshold,
-      },
-      "/routes",
-      displayRoute,
-      ["generating random route", "when creating a random route"]
-    )
-    // If the Ajax call succeeds, return the newly generated route.
-    .done((newRoute) => { cb(null, newRoute); })
-    // If the Ajax call fails, print a message and pass the error up through
-    // the callback function `cb`.
-    .fail((jqHXR, textStatus, err) => {
-      console.error("Problem with randomRoute AJAX call: " + textStatus);
-      cb(err);
-    });
+    $.ajax({
+      method: 'POST',
+      url: baseUrl + '/evo-tsp-routes',
+      data: JSON.stringify({
+          runId: runId,
+          generation: generation
+      }),
+      contentType: 'application/json', //type of data sent to the server
+      // When a request completes, call `showRoute()` to display the
+      // route on the web page.
+      success: displayRoute,
+      error: function ajaxError(jqXHR, textStatus, errorThrown) {
+          console.error(
+              'Error generating random route: ', 
+              textStatus, 
+              ', Details: ', 
+              errorThrown);
+          console.error('Response: ', jqXHR.responseText);
+          alert('An error occurred when creating a random route:\n' + jqXHR.responseText);
+      }
+  })
+  //   $.ajax({
+  //     method: 'POST',
+  //     url: baseUrl + '/evo-tsp-routes',
+  //     data: JSON.stringify({
+  //         runId: runId,
+  //         generation: generation
+  //     }),
+  //     contentType: 'application/json',
+  //     success: displayRoute,
+  //     error: function ajaxError(jqXHR, textStatus, errorThrown) {
+  //         console.error(
+  //             'Error generating random route: ', 
+  //             textStatus, 
+  //             ', Details: ', 
+  //             errorThrown);
+  //         console.error('Response: ', jqXHR.responseText);
+  //         alert('An error occurred when creating a random route:\n' + jqXHR.responseText);
+  //     }
+  // }).done((randomRoute) =>  cb(null, randomRoute))
   }
 
   ////////////////////////////////////////////////////////////
@@ -366,7 +388,7 @@
   // have this done from the previous exercise. Make sure you pass
   // `callback` as the `success` callback function in the Ajax call.
   function getRouteById(routeId, callback) {
-    // FILL THIS IN
+    //FILLIN
   }
 
   // Get city data (names, locations, etc.) from your new Lambda that returns
@@ -417,7 +439,11 @@
   // We just appended this as an `<li>` to the `new-route-list`
   // element in the HTML.
   function displayRoute(result) {
-    // FILL THIS IN
+    $('#new-route-list').text('');
+    console.log('New route received from API: ', result);
+    const routeId = result.routeId;
+    const length = result.length;
+    $('#new-route-list').append(`<li>We generated route ${routeId} with length ${length}.</li>`);
   }
 
   // Display the best routes (length and IDs) in some way.
