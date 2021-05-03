@@ -338,6 +338,7 @@
   // as the `success` callback function in your Ajax call to make sure
   // the children pass down through the `runGeneration` waterfall.
   function makeChildren(parent, numChildren, generation, cb) {
+    //This url is what essentially acceseses the mutateRoute function 
     const url = baseUrl+`/mutateroute?routeId=${parent}&generation=${generation}&numChildren=${numChildren}`;
     $.ajax({ 
         method: 'POST',
@@ -361,7 +362,6 @@
   // have this done from the previous exercise. Make sure you pass
   // `callback` as the `success` callback function in the Ajax call.
   function getRouteById(routeId, callback) {
-    const routeId = $('#route-ID').val(); //the input routeId. The .val() makes routeId a string which is used in the next line
     const url = baseUrl + '/evo-tsp-routes/'+ routeId; 
     console.log("Here is the url: " + url);
     $('#route-by-id-elements').text(''); //clearing info to make room for the returning info
