@@ -310,7 +310,7 @@
       contentType: 'application/json', //type of info sent to the database
 
       //success: showBestRoute,
-      success: (bestRoutes) => callback(null, bestRoutes),
+      success: (bestRoutes) => callback(bestRoutes),
       error: function ajaxError(jqXHR, textStatus, errorThrown) {
           console.error(
               'Error getting best routes: ', 
@@ -345,7 +345,7 @@
         url: url,
         contentType: 'application/json', //type of info sent to the database
 
-        success: children => cb(null, children),
+        success: children => cb(children),
         error: function ajaxError(jqXHR, textStatus, errorThrown) {
             console.error(
                 'Error making child routes or putting them in the table: ', 
@@ -370,7 +370,7 @@
         url: url,
         contentType: 'application/json', //type of info sent to the database
 
-        success: (route) => callback(null, route),
+        success: (route) => callback(route),
         error: function ajaxError(jqXHR, textStatus, errorThrown) {
             console.error(
                 'Error getting route details by Id: ', 
