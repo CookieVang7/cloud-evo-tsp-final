@@ -65,7 +65,7 @@
     // cb in this (and down below in runGeneration) is short for "callback".
     // Each of the functions in the series takes a callback as its last
     // (sometimes only) argument. That needs to be either passed in to a
-    // nested async tool (like `asyn.timesSeries` below) or called after
+    // nested async tool (like `async.timesSeries` below) or called after
     // the other work is done (like the `cb()` call in the last function).
     async.series([  
       initializePopulation, // create the initial population
@@ -130,7 +130,7 @@
       contentType: 'application/json', //type of data sent to the server
       // When a request completes, call `showRoute()` to display the
       // route on the web page.
-      success: displayRoute,
+      success: (randomRoute) =>  cb(null, randomRoute),
       error: function ajaxError(jqXHR, textStatus, errorThrown) {
           console.error(
               'Error generating random route: ', 
@@ -141,26 +141,7 @@
           alert('An error occurred when creating a random route:\n' + jqXHR.responseText);
       }
   })
-  //   $.ajax({
-  //     method: 'POST',
-  //     url: baseUrl + '/evo-tsp-routes',
-  //     data: JSON.stringify({
-  //         runId: runId,
-  //         generation: generation
-  //     }),
-  //     contentType: 'application/json',
-  //     success: displayRoute,
-  //     error: function ajaxError(jqXHR, textStatus, errorThrown) {
-  //         console.error(
-  //             'Error generating random route: ', 
-  //             textStatus, 
-  //             ', Details: ', 
-  //             errorThrown);
-  //         console.error('Response: ', jqXHR.responseText);
-  //         alert('An error occurred when creating a random route:\n' + jqXHR.responseText);
-  //     }
-  // }).done((randomRoute) =>  cb(null, randomRoute))
-  }
+}
 
   ////////////////////////////////////////////////////////////
   // END OF RUN EVOLUTION ////////////////////////////////////
@@ -328,43 +309,19 @@
       url: url,
       contentType: 'application/json', //type of info sent to the database
 
+      //success: showBestRoute,
       success: (bestRoutes) => callback(null, bestRoutes),
       error: function ajaxError(jqXHR, textStatus, errorThrown) {
           console.error(
-              'Error getting route details by Id: ', 
+              'Error getting best routes: ', 
               textStatus, 
               ', Details: ', 
               errorThrown);
           console.error('Response: ', jqXHR.responseText);
-          alert('An error occurred when getting route details:\n' + jqXHR.responseText);
+          alert('An error occurred when getting the best routes:\n' + jqXHR.responseText);
       }
   })
   }
-
-//   function getBestRoutes(event) {
-//     const runId = $('#runId-text-field').val(); 
-//     const generation = $('#generation-text-field').val();
-//     const numToGet = $('#num-best-to-get').val();
-//     const url = baseUrl+`/best?runId=${runId}&generation=${generation}&numToReturn=${numToGet}`;
-//     console.log("Here is the url: " + url); //clearing best-route-list id
-//     $('#best-route-list').text(''); //clearing info to make room for the returning info
-    // $.ajax({ 
-    //     method: 'GET',
-    //     url: url,
-    //     contentType: 'application/json', //type of info sent to the database
-
-    //     success: showBestRoute,
-    //     error: function ajaxError(jqXHR, textStatus, errorThrown) {
-    //         console.error(
-    //             'Error getting route details by Id: ', 
-    //             textStatus, 
-    //             ', Details: ', 
-    //             errorThrown);
-    //         console.error('Response: ', jqXHR.responseText);
-    //         alert('An error occurred when getting route details:\n' + jqXHR.responseText);
-    //     }
-    // })
-// }
 
   // Create the specified number of children by mutating the given
   // parent that many times. Each child should have their generation
@@ -381,21 +338,73 @@
   // as the `success` callback function in your Ajax call to make sure
   // the children pass down through the `runGeneration` waterfall.
   function makeChildren(parent, numChildren, generation, cb) {
-    // FILL THIS IN
+    const url = baseUrl+`/mutateroute?routeId=${parent}&generation=${generation}&numChildren=${numChildren}`;
+    $.ajax({ 
+        method: 'POST',
+        url: url,
+        contentType: 'application/json', //type of info sent to the database
+
+        success: children => cb(null, children),
+        error: function ajaxError(jqXHR, textStatus, errorThrown) {
+            console.error(
+                'Error making child routes or putting them in the table: ', 
+                textStatus, 
+                ', Details: ', 
+                errorThrown);
+            console.error('Response: ', jqXHR.responseText);
+            alert('An error occurred when making child routes:\n' + jqXHR.responseText);
+        }
+    }) 
   }
 
   // Get the full details of the specified route. You should largely
   // have this done from the previous exercise. Make sure you pass
   // `callback` as the `success` callback function in the Ajax call.
   function getRouteById(routeId, callback) {
-    //FILLIN
+    const routeId = $('#route-ID').val(); //the input routeId. The .val() makes routeId a string which is used in the next line
+    const url = baseUrl + '/evo-tsp-routes/'+ routeId; 
+    console.log("Here is the url: " + url);
+    $('#route-by-id-elements').text(''); //clearing info to make room for the returning info
+    $.ajax({ 
+        method: 'GET',
+        url: url,
+        contentType: 'application/json', //type of info sent to the database
+
+        success: (route) => callback(null, route),
+        error: function ajaxError(jqXHR, textStatus, errorThrown) {
+            console.error(
+                'Error getting route details by Id: ', 
+                textStatus, 
+                ', Details: ', 
+                errorThrown);
+            console.error('Response: ', jqXHR.responseText);
+            alert('An error occurred when getting route details:\n' + jqXHR.responseText);
+        }
+    })
   }
 
   // Get city data (names, locations, etc.) from your new Lambda that returns
   // that information. Make sure you pass `callback` as the `success` callback
   // function in the Ajax call.
   function fetchCityData(callback) {
-    // FILL THIS IN
+    const url = baseUrl + '/cityDistance_data'; 
+    console.log("Here is the url: " + url);
+    $.ajax({ 
+        method: 'GET',
+        url: url,
+        contentType: 'application/json', //type of info sent to the database
+
+        success: (cityData) => callback(null, cityData),
+        error: function ajaxError(jqXHR, textStatus, errorThrown) {
+            console.error(
+                'Error getting route details by Id: ', 
+                textStatus, 
+                ', Details: ', 
+                errorThrown);
+            console.error('Response: ', jqXHR.responseText);
+            alert('An error occurred when getting city data:\n' + jqXHR.responseText);
+        }
+    })
   }
 
   ////////////////////////////////////////////////////////////
@@ -457,7 +466,15 @@
   // so the array of best routes is pass along through
   // the waterfall in `runGeneration`.
   function displayBestRoutes(bestRoutes, dbp_cb) {
-    // FILL THIS IN
+    $('#best-route-list').text('');
+    bestRoutes.forEach(route => appendRouteToList(route));
+    dbp_cb(null, bestRoutes);
+  }
+
+  function appendRouteToList(aRoute){
+    const routeId = aRoute.routeId;
+    const length = aRoute.length;
+    $('#best-route-list').append(`<li>RouteId: ${routeId}, Length: ${length}.</li>`);
   }
 
   ////////////////////////////////////////////////////////////
