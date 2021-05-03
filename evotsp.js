@@ -397,14 +397,14 @@
         //success: (cityData) => callback(null, cityData),
         error: function ajaxError(jqXHR, textStatus, errorThrown) {
             console.error(
-                'Error getting route details by Id: ', 
+                'Error getting city data: ', 
                 textStatus, 
                 ', Details: ', 
                 errorThrown);
             console.error('Response: ', jqXHR.responseText);
             alert('An error occurred when getting city data:\n' + jqXHR.responseText);
         }
-    }).done((cityData) => callback(null, cityData))
+    }).done((cityData) => callback(null, cityData.Item.cities))
   }
 
   ////////////////////////////////////////////////////////////
