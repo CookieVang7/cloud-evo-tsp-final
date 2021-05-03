@@ -362,7 +362,7 @@
   // have this done from the previous exercise. Make sure you pass
   // `callback` as the `success` callback function in the Ajax call.
   function getRouteById(routeId, callback) {
-    const url = baseUrl + '/evo-tsp-routes/'+ routeId; 
+    const url = baseUrl + '/routes/'+ routeId; 
     console.log("Here is the url: " + url);
     $('#route-by-id-elements').text(''); //clearing info to make room for the returning info
     $.ajax({ 
@@ -404,7 +404,7 @@
             console.error('Response: ', jqXHR.responseText);
             alert('An error occurred when getting city data:\n' + jqXHR.responseText);
         }
-    }).done((cityData) => callback(null, cityData))
+    }).done((cityData) => callback(null, cityData.Item.cities))
   }
 
   ////////////////////////////////////////////////////////////
