@@ -54,7 +54,7 @@
     // Generate a new runId and set the current generation to 0
     const runId = generateUID(16);
     const initialGeneration = 0;
-    $("#runId-text-field").val(runId);
+    //$("#runId-text-field").val(runId);
     $("#current-generation").text(initialGeneration);
 
     // `async.series` takes an array of (asynchronous) functions, and
