@@ -1,6 +1,6 @@
 (function evoTSPwrapper($) {
   const baseUrl =
-    "https://nh5gsos957.execute-api.us-east-1.amazonaws.com/prod/";
+    "https://ddu7p05etd.execute-api.us-east-1.amazonaws.com/prod";
 
   /*
    * This is organized into sections:
@@ -296,8 +296,53 @@
   // ensure that the best routes that you get from the HTTP call will
   // be passed along in the `runGeneration` waterfall. 
   function getBestRoutes(generation, callback) {
-    // FILL THIS IN
+    const runId = $('#runId-text-field').val();
+    const numToReturn = $('num-parents').val();
+    const url = baseUrl+`/best?runId=${runId}&generation=${generation}&numToReturn=${numToReturn}`;
+    $('#best-route-list').text(''); //clearing info to make room for the returning info
+
+    $.ajax({ 
+      method: 'GET',
+      url: url,
+      contentType: 'application/json', //type of info sent to the database
+
+      success: (bestRoutes) => callback(null, bestRoutes),
+      error: function ajaxError(jqXHR, textStatus, errorThrown) {
+          console.error(
+              'Error getting route details by Id: ', 
+              textStatus, 
+              ', Details: ', 
+              errorThrown);
+          console.error('Response: ', jqXHR.responseText);
+          alert('An error occurred when getting route details:\n' + jqXHR.responseText);
+      }
+  })
   }
+
+//   function getBestRoutes(event) {
+//     const runId = $('#runId-text-field').val(); 
+//     const generation = $('#generation-text-field').val();
+//     const numToGet = $('#num-best-to-get').val();
+//     const url = baseUrl+`/best?runId=${runId}&generation=${generation}&numToReturn=${numToGet}`;
+//     console.log("Here is the url: " + url); //clearing best-route-list id
+//     $('#best-route-list').text(''); //clearing info to make room for the returning info
+    // $.ajax({ 
+    //     method: 'GET',
+    //     url: url,
+    //     contentType: 'application/json', //type of info sent to the database
+
+    //     success: showBestRoute,
+    //     error: function ajaxError(jqXHR, textStatus, errorThrown) {
+    //         console.error(
+    //             'Error getting route details by Id: ', 
+    //             textStatus, 
+    //             ', Details: ', 
+    //             errorThrown);
+    //         console.error('Response: ', jqXHR.responseText);
+    //         alert('An error occurred when getting route details:\n' + jqXHR.responseText);
+    //     }
+    // })
+// }
 
   // Create the specified number of children by mutating the given
   // parent that many times. Each child should have their generation
