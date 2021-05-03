@@ -394,7 +394,7 @@
         url: url,
         contentType: 'application/json', //type of info sent to the database
 
-        success: (cityData) => callback(null, cityData),
+        success: (cityData) => callback(null, cityData.Item.cities),
         error: function ajaxError(jqXHR, textStatus, errorThrown) {
             console.error(
                 'Error getting city data: ', 
