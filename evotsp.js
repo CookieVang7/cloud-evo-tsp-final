@@ -75,6 +75,7 @@
 
     function initializePopulation(cb) {
       const populationSize = parseInt($("#population-size-text-field").val());
+      const runId = parseInt($("#runId-text-field").val()); //add runId here
       console.log(
         `Initializing pop for runId = ${runId} with pop size ${populationSize}, generation = ${initialGeneration}`
       );
