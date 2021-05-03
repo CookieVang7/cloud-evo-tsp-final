@@ -130,7 +130,7 @@
       contentType: 'application/json', //type of data sent to the server
       // When a request completes, call `showRoute()` to display the
       // route on the web page.
-      success: (randomRoute) =>  cb(null, randomRoute),
+      success: (randomRoute) =>  cb(randomRoute), //took out null here
       error: function ajaxError(jqXHR, textStatus, errorThrown) {
           console.error(
               'Error generating random route: ', 
@@ -310,7 +310,7 @@
       contentType: 'application/json', //type of info sent to the database
 
       //success: showBestRoute,
-      success: (bestRoutes) => callback(bestRoutes),
+      success: (bestRoutes) => callback(bestRoutes), //took out null here
       error: function ajaxError(jqXHR, textStatus, errorThrown) {
           console.error(
               'Error getting best routes: ', 
@@ -345,7 +345,7 @@
         url: url,
         contentType: 'application/json', //type of info sent to the database
 
-        success: children => cb(children),
+        success: children => cb(children), //took out null here
         error: function ajaxError(jqXHR, textStatus, errorThrown) {
             console.error(
                 'Error making child routes or putting them in the table: ', 
@@ -370,7 +370,7 @@
         url: url,
         contentType: 'application/json', //type of info sent to the database
 
-        success: (route) => callback(route),
+        success: (route) => callback(route), //took out null here
         error: function ajaxError(jqXHR, textStatus, errorThrown) {
             console.error(
                 'Error getting route details by Id: ', 
@@ -394,7 +394,7 @@
         url: url,
         contentType: 'application/json', //type of info sent to the database
 
-        success: (cityData) => callback(cityData),
+        success: (cityData) => callback(cityData), //took out null here
         error: function ajaxError(jqXHR, textStatus, errorThrown) {
             console.error(
                 'Error getting city data: ', 
