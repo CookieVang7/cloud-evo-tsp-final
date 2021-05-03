@@ -122,7 +122,7 @@
   function randomRoute(runId, generation, cb) {
     $.ajax({
       method: 'POST',
-      url: baseUrl + '/evo-tsp-routes',
+      url: baseUrl + '/routes',
       data: JSON.stringify({
           runId: runId,
           generation: generation
