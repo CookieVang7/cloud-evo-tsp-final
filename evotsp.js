@@ -122,26 +122,26 @@
 
   function randomRoute(runId, generation, cb) {
     $.ajax({
-      method: 'POST',
-      url: baseUrl + '/routes',
-      data: JSON.stringify({
-          runId: runId,
-          generation: generation
-      }),
-      contentType: 'application/json', //type of data sent to the server
-      // When a request completes, call `showRoute()` to display the
-      // route on the web page.
-      success: (randomRoute) =>  cb(null, randomRoute), 
-      error: function ajaxError(jqXHR, textStatus, errorThrown) {
-          console.error(
-              'Error generating random route: ', 
-              textStatus, 
-              ', Details: ', 
-              errorThrown);
-          console.error('Response: ', jqXHR.responseText);
-          alert('An error occurred when creating a random route:\n' + jqXHR.responseText);
-      }
-  })
+        method: 'POST',
+        url: baseUrl + '/routes',
+        data: JSON.stringify({
+            runId: runId,
+            generation: generation
+        }),
+        contentType: 'application/json', //type of data sent to the server
+        // When a request completes, call `showRoute()` to display the
+        // route on the web page.
+        //success: displayRoute,
+        error: function ajaxError(jqXHR, textStatus, errorThrown) {
+            console.error(
+                'Error generating random route: ', 
+                textStatus, 
+                ', Details: ', 
+                errorThrown);
+            console.error('Response: ', jqXHR.responseText);
+            alert('An error occurred when creating a random route:\n' + jqXHR.responseText);
+        }
+    }).done((aRoute) => cb(null, aRoute))
 }
 
   ////////////////////////////////////////////////////////////
@@ -303,7 +303,6 @@
     const runId = $('#runId-text-field').val();
     const numToReturn = $('#num-parents').val();
     const url = baseUrl+`/best?runId=${runId}&generation=${generation}&numToReturn=${numToReturn}`;
-    $('#best-route-list').text(''); //clearing info to make room for the returning info
 
     $.ajax({ 
       method: 'GET',
@@ -345,12 +344,12 @@
         url: url,
         data: JSON.stringify({ //body, not queryParameters
           routeId: parent.routeId,
-          generation: generation,
+          lengthStoreThreshold: lengthStoreThreshold,
           numChildren: numChildren
         }),
         contentType: 'application/json', //type of info sent to the database
 
-        success: children => cb(null, children), 
+        success: (children) => cb(null, children), 
         error: function ajaxError(jqXHR, textStatus, errorThrown) {
             console.error(
                 'Error making child routes or putting them in the table: ', 
@@ -367,15 +366,14 @@
   // have this done from the previous exercise. Make sure you pass
   // `callback` as the `success` callback function in the Ajax call.
   function getRouteById(routeId, callback) {
-    const url = baseUrl + '/routes/'+ routeId; 
+    const url = baseUrl + `/routes/${routeId}`; 
     console.log("Here is the url: " + url);
-    //$('#route-by-id-elements').text(''); //clearing info to make room for the returning info
     $.ajax({ 
         method: 'GET',
         url: url,
         contentType: 'application/json', //type of info sent to the database
 
-        success: (route) => callback(null, route), //took out null here
+        success: (route) => callback(null, route),
         error: function ajaxError(jqXHR, textStatus, errorThrown) {
             console.error(
                 'Error getting route details by Id: ', 
@@ -457,12 +455,11 @@
   // Display a new (child) route (ID and length) in some way.
   // We just appended this as an `<li>` to the `new-route-list`
   // element in the HTML.
-  function displayRoute(child) {
-    //$('#new-route-list').text('');
-    console.log('New route received from API: ', child);
-    // const routeId = child.routeId;
-    // const length = child.len;
-    $('#new-route-list').append(`<li>We generated route ${child.routeId} with length ${child.len}.</li>`);
+  function displayRoute(childRoute) {
+    //need "Item" here because it's part of the JSON object
+    let routeId = childRoute.Item.routeId;
+    let length = childRoute.Item.len;
+    $('#new-route-list').append(`<li>We generated route ${routeId} that has length ${length}.</li>`);
   }
 
   // Display the best routes (length and IDs) in some way.
