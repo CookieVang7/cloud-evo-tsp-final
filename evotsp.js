@@ -131,7 +131,7 @@
       contentType: 'application/json', //type of data sent to the server
       // When a request completes, call `showRoute()` to display the
       // route on the web page.
-      success: (randomRoute) =>  cb(randomRoute), //took out null here
+      success: (randomRoute) =>  cb(null, randomRoute), 
       error: function ajaxError(jqXHR, textStatus, errorThrown) {
           console.error(
               'Error generating random route: ', 
@@ -301,7 +301,7 @@
   // be passed along in the `runGeneration` waterfall. 
   function getBestRoutes(generation, callback) {
     const runId = $('#runId-text-field').val();
-    const numToReturn = $('num-parents').val();
+    const numToReturn = $('#num-parents').val();
     const url = baseUrl+`/best?runId=${runId}&generation=${generation}&numToReturn=${numToReturn}`;
     $('#best-route-list').text(''); //clearing info to make room for the returning info
 
@@ -310,8 +310,7 @@
       url: url,
       contentType: 'application/json', //type of info sent to the database
 
-      //success: showBestRoute,
-      success: (bestRoutes) => callback(bestRoutes), //took out null here
+      success: (bestRoutes) => callback(null, bestRoutes), //took out null here
       error: function ajaxError(jqXHR, textStatus, errorThrown) {
           console.error(
               'Error getting best routes: ', 
@@ -340,13 +339,18 @@
   // the children pass down through the `runGeneration` waterfall.
   function makeChildren(parent, numChildren, generation, cb) {
     //This url is what essentially acceseses the mutateRoute function 
-    const url = baseUrl+`/mutateroute?routeId=${parent}&generation=${generation}&numChildren=${numChildren}`;
+    const url = baseUrl+ '/mutateroute';
     $.ajax({ 
         method: 'POST',
         url: url,
+        data: JSON.stringify({ //body, not queryParameters
+          routeId: parent.routeId,
+          generation: generation,
+          numChildren: numChildren
+        }),
         contentType: 'application/json', //type of info sent to the database
 
-        success: children => cb(children), //took out null here
+        success: children => cb(null, children), 
         error: function ajaxError(jqXHR, textStatus, errorThrown) {
             console.error(
                 'Error making child routes or putting them in the table: ', 
@@ -365,13 +369,13 @@
   function getRouteById(routeId, callback) {
     const url = baseUrl + '/routes/'+ routeId; 
     console.log("Here is the url: " + url);
-    $('#route-by-id-elements').text(''); //clearing info to make room for the returning info
+    //$('#route-by-id-elements').text(''); //clearing info to make room for the returning info
     $.ajax({ 
         method: 'GET',
         url: url,
         contentType: 'application/json', //type of info sent to the database
 
-        success: (route) => callback(route), //took out null here
+        success: (route) => callback(null, route), //took out null here
         error: function ajaxError(jqXHR, textStatus, errorThrown) {
             console.error(
                 'Error getting route details by Id: ', 
@@ -393,9 +397,11 @@
     $.ajax({ 
         method: 'GET',
         url: url,
-        contentType: 'application/json', //type of info sent to the database
+        contentType: 'application/json', 
 
-        success: (cityData) => callback(cityData), //took out null here
+        //We don't need null in this callback function, since the results of this function are passed into the callback function
+        //initializeMap(cities). It only takes the cities and not the null values
+        success: (cityData) => callback(cityData), 
         error: function ajaxError(jqXHR, textStatus, errorThrown) {
             console.error(
                 'Error getting city data: ', 
@@ -440,6 +446,9 @@
   // Display all the children. This just uses a `forEach`
   // to call `displayRoute` on each child route. This
   // should be complete and work as is.
+  /*
+  This function shows all the children in a generation
+  */
   function displayChildren(children, dc_cb) {
     children.forEach(child => displayRoute(child));
     dc_cb(null, children);
@@ -448,12 +457,12 @@
   // Display a new (child) route (ID and length) in some way.
   // We just appended this as an `<li>` to the `new-route-list`
   // element in the HTML.
-  function displayRoute(result) {
-    $('#new-route-list').text('');
-    console.log('New route received from API: ', result);
-    const routeId = result.routeId;
-    const length = result.length;
-    $('#new-route-list').append(`<li>We generated route ${routeId} with length ${length}.</li>`);
+  function displayRoute(child) {
+    //$('#new-route-list').text('');
+    console.log('New route received from API: ', child);
+    // const routeId = child.routeId;
+    // const length = child.len;
+    $('#new-route-list').append(`<li>We generated route ${child.routeId} with length ${child.len}.</li>`);
   }
 
   // Display the best routes (length and IDs) in some way.
@@ -466,17 +475,17 @@
   //
   // so the array of best routes is pass along through
   // the waterfall in `runGeneration`.
+  /*
+  This function shows the best routes from the previous generation(s)
+  */
   function displayBestRoutes(bestRoutes, dbp_cb) {
-    $('#best-route-list').text('');
-    bestRoutes.forEach(route => appendRouteToList(route));
+    let length = bestRoutes[0].len;
+    let routeId = bestRoutes[0].routeId;
+    $('#best-route-list').append(`<li>Length: ${length}, RouteId: ${routeId}</li>`);
     dbp_cb(null, bestRoutes);
   }
 
-  function appendRouteToList(aRoute){
-    const routeId = aRoute.routeId;
-    const length = aRoute.length;
-    $('#best-route-list').append(`<li>RouteId: ${routeId}, Length: ${length}.</li>`);
-  }
+  
 
   ////////////////////////////////////////////////////////////
   // END OF HTML DISPLAY /////////////////////////////////////
