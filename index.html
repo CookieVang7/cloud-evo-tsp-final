@@ -39,16 +39,16 @@
 
     <div id="map" style="height: 500px; width: 500px"></div>
     <div id="best-run-routes">
-      <h2>Best so far</h2>
+      <h2>Best route details:</h2>
       <ul>
-        <li>Best <code>routeId</code>: <span id="best-routeId"></span></li>
-        <li>Best length: <span id="best-length"></span></li>
+        <li><b>Best routeId:</b> <span id="best-routeId"></span></li>
+        <li><b>Best length</b> (measured in meters <a href="https://en.wikipedia.org/wiki/As_the_crow_flies">as the crow flies</a>)<b>:</b> <span id="best-length"></span></li>
         <li>
-          Best path: <span id="best-path"></span>
+          <b>Best path:</b> <span id="best-path"></span>
           <ol id="best-route-cities"></ol>
         </li>
         <li>
-          Current threshold: <span id="current-threshold"></span>
+          <b>Current threshold:</b> <span id="current-threshold"></span>
         </li>
       </ul>
     </div>
@@ -64,6 +64,7 @@
 
     <div class="current-generation">
       <h2>Current generation: <span id="current-generation"></span></h2>
+      <p>In the above generation, we generated these routes:</p>
       <div id="new-routes">
         <ol id="new-route-list"></ol>
       </div>
@@ -72,7 +73,7 @@
     <div class="get-best-routes">
       <h2>Best routes from previous generation(s)</h2>
       <div id="best-routes">
-        <ol id="best-route-list"></ol>
+        <ul id="best-route-list"></ul>
       </div>
     </div>
 
@@ -83,11 +84,9 @@
       var mymap = L.map("map").setView([46.7296, -94.6859], 6); //automate or import view for future
 
       L.tileLayer(
-        //"https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}"
-        'http://{s}.tile.osm.org/{z}/{x}/{y}.png',
+        'http://{s}.tile.osm.org/{z}/{x}/{y}.png', //using open street map instead of mapbox to get tiles
         {
           attribution:
-            //'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
             '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
           maxZoom: 18,
           id: "mapbox/streets-v11",
@@ -97,6 +96,11 @@
             "PUT YOUR TOKEN HERE",
         }
       ).addTo(mymap);
+    </script>
+    <script>
+      /*Adding PeachPuff background color 
+      Referenced https://www.w3schools.com/jsref/tryit.asp?filename=tryjsref_style_backgroundimage*/
+      document.body.style.backgroundColor = "#FFDAB9"; 
     </script>
   </body>
 </html>
