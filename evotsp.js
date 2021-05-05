@@ -77,7 +77,11 @@
 
     function initializePopulation(cb) {
       const populationSize = parseInt($("#population-size-text-field").val());
-      const runId = $("#runId-text-field").val();
+      let runId = $("#runId-text-field").val();
+      if (runId === ""){ //if no runId is entered, then a random one will be generated and put into that field
+        runId = generateUID(16);
+        $("#runId-text-field").val(runId);
+      }
       console.log(
         `Initializing pop for runId = ${runId} with pop size ${populationSize}, generation = ${initialGeneration}`
       );
