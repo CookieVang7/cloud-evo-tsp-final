@@ -481,6 +481,7 @@
     let route = childRoute.route;
     let length = childRoute.len;
     let routeId = childRoute.routeId;
+    //Not clearing new-route-list or else nothing will append and we'll only see one route in this section
     $('#new-route-list').append(`<li><b>Route:</b> ${route}, <b>Length:</b> ${length}, <b>RouteId:</b> ${routeId}</li>`);
   }
 
