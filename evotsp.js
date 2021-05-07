@@ -76,7 +76,37 @@
     ]);
 
     function initializePopulation(cb) {
-      const populationSize = parseInt($("#population-size-text-field").val());
+      let populationSize = $("#population-size-text-field").val();
+      if (populationSize === ""){
+        alert("The field for the population size is empty. The page will reload after clicking 'OK', please try again");
+        location.reload();
+      }
+      if (populationSize === 0 || populationSize < 0){
+        alert("The field for the population size is invalid. The page will reload after clicking 'OK', please try again");
+        location.reload();
+      }
+
+      let numOfParents = $("#num-parents").val();
+      if (numOfParents === ""){
+        alert("The field for the number of parents to evolve in each generation is empty. The page will reload after clicking 'OK', please try again");
+        location.reload();
+      }
+      if (numOfParents === 0 || numOfParents < 0){
+        alert("The field for the number of parents to evolve in each generation is invalid. The page will reload after clicking 'OK', please try again");
+        location.reload();
+      }
+
+      if (parseInt(populationSize) < parseInt(numOfParents)){
+        alert("The population size you entered is smaller than the number of parents. The page will reload after clicking 'OK', please try again");
+        location.reload();
+      }
+
+      let generationNumber = $("#num-generations").val();
+      if (generationNumber === ""){
+        alert("The field for the number generations to run is empty. The page will reload after clicking 'OK', please try again");
+        location.reload();
+      }
+      
       let runId = $("#runId-text-field").val();
       if (runId === ""){ //if no runId is entered, then a random one will be generated and put into that field
         runId = generateUID(16);
