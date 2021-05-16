@@ -78,15 +78,25 @@ This function gets distance data from the cityDistance_data table and gets a sin
 
 For each lambda, I had to make a corresponding API resource and include methods to allow the lambdas to make their various requests.
 
--   /best: For the GetBestRoutes lambda function, the resource I made had a path of /best. The method associated with it was GET. The GetBestRoutes lambda function takes in the parameters Run ID, generation and the number of routes to return (called numToReturn). So in the evotsp.js file, adding /best?runId=${runId}&generation=${generation}&numToReturn=${numToReturn} to the end of the invoke url will allow the application to make its query request to evo-tsp-routes. The fields in the url are needed since the function is using querying the table and has multiple parameters to search the table by.
+####   `/best`: 
 
--   /city-data: This resource path is associated with the GetCityData lambda function. It has a GET method since it is getting data from the cityDistance_data table. To access the method from evotsp.js, the url is /city-data concatenated to the end of the invoke url. There are no parameters needed unlike GetBestRoutes.
+For the GetBestRoutes lambda function, the resource I made had a path of /best. The method associated with it was GET. The GetBestRoutes lambda function takes in the parameters Run ID, generation and the number of routes to return (called numToReturn). So in the evotsp.js file, adding /best?runId=${runId}&generation=${generation}&numToReturn=${numToReturn} to the end of the invoke url will allow the application to make its query request to evo-tsp-routes. The fields in the url are needed since the function is using querying the table and has multiple parameters to search the table by.
 
--   /mutateroute: This resource path is associated with the MutateRoute lambda function. It has a POST method since it is putting multiple routes into the evo-tsp-routes table. To access the method from evotsp.js, the url is /mutateroute concatenated to the end of the invoke url. There are no parameters needed since we are posting items into the table.
+####   `/city-data`: 
 
--   /routes: This resource path is associated with the GenerateRandomRoute lambda function. It has a POST method since it is putting a route into the evo-tsp-routes table. To access the method from evotsp.js, the url is /routes concatenated to the end of the invoke url. Similar to /mutateroute, no parameters are needed since we are posting an item into the table.
+This resource path is associated with the GetCityData lambda function. It has a GET method since it is getting data from the cityDistance_data table. To access the method from evotsp.js, the url is /city-data concatenated to the end of the invoke url. There are no parameters needed unlike GetBestRoutes.
 
--   /routes/{routeId}: This resource path is associated with the GetRouteById lambda function. It has a GET method since it is getting a route from the cityDistance_data table. To access the method from evotsp.js, the url is /routes/routeId concatenated to the end of the invoke url. The routeId is added at the end here since that is the parameter we are searching the table by (similarly to GetBestRoutes)
+####   `/mutateroute`: 
+
+This resource path is associated with the MutateRoute lambda function. It has a POST method since it is putting multiple routes into the evo-tsp-routes table. To access the method from evotsp.js, the url is /mutateroute concatenated to the end of the invoke url. There are no parameters needed since we are posting items into the table.
+
+####   `/routes`: 
+
+This resource path is associated with the GenerateRandomRoute lambda function. It has a POST method since it is putting a route into the evo-tsp-routes table. To access the method from evotsp.js, the url is /routes concatenated to the end of the invoke url. Similar to /mutateroute, no parameters are needed since we are posting an item into the table.
+
+####   `/routes/{routeId}`: 
+
+This resource path is associated with the GetRouteById lambda function. It has a GET method since it is getting a route from the cityDistance_data table. To access the method from evotsp.js, the url is /routes/routeId concatenated to the end of the invoke url. The routeId is added at the end here since that is the parameter we are searching the table by (similarly to GetBestRoutes)
 
 ### IAM Roles:
 
