@@ -64,7 +64,7 @@ There are 5 lambda functions for this project. They are GetCityData, GenerateRan
 
 -   MutateRoute: This function gets distance data from the cityDistance_data table and gets a single route (acting as a parent route) from the evo-tsp-routes table. Then it generates a specified number of child routes and puts them into an array. The array is filtered so that only the child routes who have lengths below a certain threshold are kept. Then this new subset of child routes is turned into a JSON object and BatchWrite is used to put all the new child routes in the evo-tsp-routes table. Each child route has the same Run ID as the parent route, but the child route has a generation of the parent route's plus one. So if helloWorld#7 is the parent route, then a child route will have helloWorld#8.
 
-API Details: 
+### API Details: 
 
 For each lambda, I had to make a corresponding API resource and include methods to allow the lambdas to make their various requests.
 
@@ -78,11 +78,11 @@ For each lambda, I had to make a corresponding API resource and include methods 
 
 -   /routes/{routeId}: This resource path is associated with the GetRouteById lambda function. It has a GET method since it is getting a route from the cityDistance_data table. To access the method from evotsp.js, the url is /routes/routeId concatenated to the end of the invoke url. The routeId is added at the end here since that is the parameter we are searching the table by (similarly to GetBestRoutes)
 
-IAM Roles:
+### IAM Roles:
 
 An IAM role will define other AWS services that can interact with the lambda functions. If this was a bigger scale project, I definitely would have created multiple specific roles, but for this project, I created a single IAM role on IAM AWS. There are 4 permissions needed from DynamoDB. Within the role, I created a new inline policy and after choosing the DynamoDB service, I added GetItem, Query, PutItem and BatchWriteItem as actions. A get request grabs a single item, so GetRouteById will now be able to grab a route's information from the evo-tsp-routes table. GetCityData will also use a get request to grab the object in the cityDistance_data table (as it is the only object in the table). A query request grabs a collection of items, so GetBestRoutes will now be able to request a certain number of routes with the same Run Id from the evo-tsp-routes table. GenerateRandomRoute can now use a put request to put a single route in the evo-tsp-routes table and MutateRoute can use BatchWrite to put up to 25 routes into the evo-tsp-routes table at a time.
 
-Leaflet Details: 
+### Leaflet Details: 
 
 I used Mapbox as the tile provider for the map on the webpage. To do this, I created a token on the [Mapbox website](https://www.mapbox.com/). Putting this access token in the html file for the application allowed it to use their map data. Leaflet is a JavaScript library that lets us interact with the map we got from Mapbox. The CSS and JavaScript files are from the [Leaflet Quickstart Guide](https://leafletjs.com/examples/quick-start/). Using Leaflet, we can highlight the cities on the map using red circles. Clicking on a red circle would tell the name of the city. We can also use Leaflet to draw out the best map with a dashed blue line. The dashed path will update to always match the best generated route: ![](https://lh6.googleusercontent.com/VCnHJ80_ybakXnyeCuW7y5AxQrjRMnxwMm0JIjtMi9lGs9MNWbsJURNHtMmwyNYvbJjmpdsnAKBaUGcCUcZM1Z924WbPDZ1XHlyQaLjkYIit1xDH7Ncjz9AAc77kPc2Sxr9ud1Cp)
 
