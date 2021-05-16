@@ -23,11 +23,11 @@
 - [IAM Roles](#iam-roles)
 - [Leaflet Details](#leaflet-details)
 - [Appendix I (Lambda function code)](#appendix-i)
-    - [`GetCityData()`](#getcitydatacode)
-    - [`GenerateRandomRoute()`](#generaterandomroutecode)
-    - [`GetBestRoutes()`](#getbestroutescode)
-    - [`GetRouteById()`](#getroutebyidcode)
-    - [`MutateRoute()`](#mutateroutecode)
+    - [`GetCityData()`](#getcitydata)
+    - [`GenerateRandomRoute()`](#generaterandomroute)
+    - [`GetBestRoutes()`](#getbestroutes)
+    - [`GetRouteById()`](#getroutebyid)
+    - [`MutateRoute()`](#mutateroute)
 
 ### Overview-Purpose
 This project tackles the Traveling Salesman Problem (TSP) by evolving TSP routes. The Traveling Salesman Problem inquires that if you are given a list of cities and their distances from one another, what is the shortest possible route that visits each city including looping back to the beginning city? An answer to this can be accomplished by taking an initial population of routes between all the cities and evolving the best of them (called parent routes) to create shorter routes (called child routes). The process is then repeated with the new set of child routes. Each iteration of the process is called a generation where the number of generations is specified by the user.
