@@ -8,7 +8,7 @@
 - [Solution-Structure](#solution-structure)
 - [User Documentation](#user-documentation)
 - [Table Structure](#table-structure)
-- [Lambda Functions](#lambda-functions)
+- [About Lambda Functions](#about-lambda-functions)
     - [`GetCityData()`](#getcitydata)  
     - [`GenerateRandomRoute()`](#generaterandomroute)
     - [`GetRouteById()`](#getroutebyid)
@@ -22,6 +22,12 @@
     - [`/routes/{routeId}`](#getRoute)
 - [IAM Roles](#iam-roles)
 - [Leaflet Details](#leaflet-details)
+- [Appendix I (Lambda function code)](#appendix-i)
+    - [`GetCityData()`](#getcitydatacode)
+    - [`GenerateRandomRoute()`](#generaterandomroutecode)
+    - [`GetBestRoutes()`](#getbestroutescode)
+    - [`GetRouteById()`](#getroutebyidcode)
+    - [`MutateRoute()`](#mutateroutecode)
 
 ### Overview-Purpose
 This project tackles the Traveling Salesman Problem (TSP) by evolving TSP routes. The Traveling Salesman Problem inquires that if you are given a list of cities and their distances from one another, what is the shortest possible route that visits each city including looping back to the beginning city? An answer to this can be accomplished by taking an initial population of routes between all the cities and evolving the best of them (called parent routes) to create shorter routes (called child routes). The process is then repeated with the new set of child routes. Each iteration of the process is called a generation where the number of generations is specified by the user.
@@ -50,7 +56,7 @@ The first table I made is called cityDistance_data. The primary key (and a field
 
 The second table I made is called evo-tsp-routes. It starts out empty, but will be filled with routes when the application is run. Fields of this table are routeId, len (length), route and runGen. The runGen is the Run Id concatenated with # and then concatenated with the generation of the route. An example is helloWorld#2. So the Run ID is helloWorld and the generation the route came from is generation 2 of the simulation. The field "route" is an array that has a possible combination of the cities. So if there are a k number of cities in the cityDistances_data table, then "route" looks like a permutation of [0,1,...,k-1] where each number is an index that corresponds to a city in the cityDistances_data table. The partition key of evo-tsp-routes is the Route ID. Each Route ID is unique so making it the partition key makes grabbing a specific route easier. I added an index for this table called runGen-len-index. The primary key of the index is the runGen. Making runGen the partition key for the index allows us to specify the routes we want to grab from the table easier. All the routes in a simulation have the same Run ID, so if multiple simulations are run (with different Run IDs) we can quickly tell the table we want to see all the routes from a specific simulation. The secondary key of the index is the length of the route. Having length as the secondary key helps the GetBestRoutes lambda function filter out routes that have lengths above a certain threshold since our objective is to find routes with the shortest distance(s) possible.
 
-### Lambda Functions:
+### About Lambda Functions:
 
 There are 5 lambda functions for this project. They are GetCityData, GenerateRandomRoute, GetRouteById, GetBestRoutes and MutateRoute. 
 
@@ -107,3 +113,645 @@ An IAM role will define other AWS services that can interact with the lambda fun
 I used Mapbox as the tile provider for the map on the webpage. To do this, I created a token on the [Mapbox website](https://www.mapbox.com/). Putting this access token in the html file for the application allowed it to use their map data. Leaflet is a JavaScript library that lets us interact with the map we got from Mapbox. The CSS and JavaScript files are from the [Leaflet Quickstart Guide](https://leafletjs.com/examples/quick-start/). Using Leaflet, we can highlight the cities on the map using red circles. Clicking on a red circle would tell the name of the city. We can also use Leaflet to draw out the best map with a dashed blue line. The dashed path will update to always match the best generated route: ![](https://lh6.googleusercontent.com/VCnHJ80_ybakXnyeCuW7y5AxQrjRMnxwMm0JIjtMi9lGs9MNWbsJURNHtMmwyNYvbJjmpdsnAKBaUGcCUcZM1Z924WbPDZ1XHlyQaLjkYIit1xDH7Ncjz9AAc77kPc2Sxr9ud1Cp)
 
 Mapbox tiles are a bit clearer than OpenStreetMap tiles, which are a bit more blurry. I also chose Mapbox over OpenStreetMap because Mapbox includes solid dots on the cities which is a nice contrast to the lighter colored background. The size of the red circular highlights are sized the way they are so they do not take up too much space on the map, but big enough so that they surround the city's dot on the map if it has one.
+
+### Appendix I (Lambda function code)
+
+#### `GetCityData()`: 
+
+```
+const AWS = require('aws-sdk');
+const ddb = new AWS.DynamoDB.DocumentClient();
+ 
+exports.handler = (event, context, callback) => {
+ 
+    getCityData()
+        .then(dbResults => {
+            const minnesotaCities = dbResults.Item.cities; //grabbing just the cities from the object in the database
+            callback(null, {
+                statusCode: 201,
+                body: JSON.stringify(minnesotaCities),
+                headers: {
+                    'Access-Control-Allow-Origin': '*'
+                }
+            });
+        })
+        .catch(err => {
+            console.log(`Problem getting city data from.`);
+            console.error(err);
+            errorResponse(err.message, context.awsRequestId, callback);
+        });
+};
+ 
+/*
+Gets the 'Minnesota' object from the first table/database. The object
+includes the cities and their distances from each other
+*/
+function getCityData() {
+    return ddb.get({
+        TableName: 'cityDistance_data',
+        Key: {region: 'Minnesota'}, //Specifies the key to look at in the object
+    }).promise();
+}
+ 
+function errorResponse(errorMessage, awsRequestId, callback) {
+  callback(null, {
+    statusCode: 500,
+    body: JSON.stringify({
+      Error: errorMessage,
+      Reference: awsRequestId,
+    }),
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+    },
+  });
+}
+```
+#### `GenerateRandomRoute()`:
+```
+const AWS = require('aws-sdk');
+const ddb = new AWS.DynamoDB.DocumentClient();
+const randomBytes = require('crypto').randomBytes;
+ 
+exports.handler = (event, context, callback) => {
+    const requestBody = JSON.parse(event.body);
+    const runId = requestBody.runId;
+    const generation = requestBody.generation;
+    const runGen = runId + '#' + generation;
+    
+    generateRandomRoute(runId, generation, callback, runGen);
+};
+ 
+/*
+Generates a random route based off of the cities and distances object in the 
+cityDistance_data table. This method runs when getCityData gets 
+information back from the database A callback function is passed as a parameter 
+which will echo back the routeId and length. The callback function after the 
+put request is done
+*/
+function generateRandomRoute(runId, generation, callback, runGen){
+    getCityData().then(minnesotaObject =>{ //getCityData is a promise object, when that function returns the 
+    //object from the database, then the following code will be executed
+        
+        const cityDistances = minnesotaObject.Item.distances; 
+        const numberOfCities = Object.keys(minnesotaObject.Item.cities).length;
+        
+        const arrayOfCities = new Array(); //creating an empty array to be populated and randomized
+        populateCityArray(arrayOfCities,numberOfCities); //now the array has entries [0,1,...,n-1]
+        cityRandomizer(arrayOfCities); //randomizing the cities
+       
+        const routeId = toUrlString(randomBytes(16));
+        const routeDistance = calculateDistance(arrayOfCities,cityDistances);
+        
+        return ddb.put( //the put request that enters the route information in the evo-tsp-routes database/table
+        {TableName: 'evo-tsp-routes',
+        Item: {
+        // runId: runId,
+        // generation: generation,
+        runGen: runGen,
+        routeId: routeId,
+        route: arrayOfCities,
+        len: routeDistance},}).promise().then(dbResults => { //"length" is what I named the sort key in the "routes" table
+            callback(null, { //what the database will tell the user
+                statusCode: 201,
+                body: JSON.stringify({
+                    routeId: routeId,
+                    length: routeDistance,
+                }),
+                headers: {
+                    'Access-Control-Allow-Origin': '*'
+                }
+            });
+        });
+    });
+}
+ 
+/*
+Gets the 'Minnesota' object from the first table/database. The object
+includes the cities and their distances from each other
+*/
+function getCityData() {
+    return ddb.get({
+        TableName: 'cityDistance_data',
+        Key: {region: 'Minnesota'}, 
+    }).promise();
+}
+ 
+/*
+Takes in a randomized array and calculates the total distance of the route by 
+referencing the distance portion of the minnesotaObject
+*/
+function calculateDistance(array, cityDistances){
+    let totalDistance = 0;
+    for (let i = 0; i < array.length; i++){
+        if (i == array.length-1){
+            const finalCity = array[i];
+            const startCity = array[0];
+            const homeTripDistance = cityDistances[finalCity][startCity];
+            totalDistance = totalDistance + homeTripDistance;
+        }
+        else {
+            const city1 = array[i];
+            const city2 = array[i+1];
+            const aDistance = cityDistances[city1][city2];
+            totalDistance = totalDistance + aDistance;
+        }
+    }
+    return totalDistance;
+}
+ 
+/*
+Populates an array with numbers 0-(n-1)
+*/
+function populateCityArray(arrayOfCities, numberOfCities){
+    for (let i=0; i < numberOfCities; i++){
+        arrayOfCities[i] = i;
+    }
+}
+ 
+/*
+Randomizes the array [0,1,....n-1]
+*/
+function cityRandomizer(array){
+    for (let i = array.length - 1; i > 0; i--) {
+        let j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+}
+ 
+function toUrlString(buffer) {
+    return buffer.toString('base64')
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=/g, '');
+}
+ 
+function errorResponse(errorMessage, awsRequestId, callback) {
+  callback(null, {
+    statusCode: 500,
+    body: JSON.stringify({
+      Error: errorMessage,
+      Reference: awsRequestId,
+    }),
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+    },
+  });
+}
+```
+#### `GetBestRoutes()`:
+```
+const AWS = require('aws-sdk');
+const ddb = new AWS.DynamoDB.DocumentClient();
+ 
+exports.handler = (event, context, callback) => {
+    const queryStringParameters = event.queryStringParameters;
+    const runId = queryStringParameters.runId;
+    const generation = queryStringParameters.generation;
+    const numToReturn = queryStringParameters.numToReturn;
+    
+    
+    getBestRoutes(runId, generation, numToReturn)
+        .then(dbResults => {
+            const bestRoutes = dbResults.Items;
+            callback(null, {
+                statusCode: 201,
+                body: JSON.stringify(bestRoutes),
+                headers: {
+                    'Access-Control-Allow-Origin': '*'
+                }
+            });
+        })
+        .catch(err => {
+            console.log(`Problem getting best runs for generation ${generation} of ${runId}.`);
+            console.error(err);
+            errorResponse(err.message, context.awsRequestId, callback);
+        });
+};
+ 
+function getBestRoutes(runId, generation, numToReturn) { //gets the best/shortest routes when invoked and given parameters
+    const runGen = runId + "#" + generation; //runGen which is passed into the query to find the specified number of routes
+    return ddb.query({
+        TableName: 'evo-tsp-routes',
+        IndexName: 'runGen-len-index', //specifying the index to search
+        ProjectionExpression: "routeId, len, route, runGen", //identifies fields to be returned
+        KeyConditionExpression: "runGen = :runGen", //getting back the routes with the particular runGen specified on line 
+        ExpressionAttributeValues: {
+                ":runGen": runGen,
+            },
+        Limit: numToReturn
+    }).promise();
+}
+ 
+function errorResponse(errorMessage, awsRequestId, callback) {
+  callback(null, {
+    statusCode: 500,
+    body: JSON.stringify({
+      Error: errorMessage,
+      Reference: awsRequestId,
+    }),
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+    },
+  });
+}
+```
+#### `GetRouteById()`:
+```
+const AWS = require('aws-sdk');
+const ddb = new AWS.DynamoDB.DocumentClient();
+ 
+exports.handler = (event, context, callback) => {
+    const pathParameters = event.pathParameters;
+    const userRouteId = pathParameters.routeId;
+    
+    getRouteById(userRouteId)
+        .then(dbResults => {
+            if (dbResults == null){
+                callback(null, {
+                statusCode: 400,
+                body: JSON.stringify({
+                Error: "Response from database failed",
+                }),
+                headers: {
+                'Access-Control-Allow-Origin': '*',
+                },
+            });
+            }
+            callback(null, {
+                statusCode: 201,
+                body: JSON.stringify(dbResults.Item), //Item and not Items since only one thing is returned
+                headers: {
+                    'Access-Control-Allow-Origin': '*'
+                }
+            });
+        })
+        .catch(err => {
+            console.log(`Problem getting route from ${userRouteId}.`);
+            console.error(err);
+            errorResponse(err.message, context.awsRequestId, callback);
+        });
+};
+ 
+function getRouteById(userRouteId) { 
+    return ddb.get({
+        TableName: 'evo-tsp-routes',
+        Key: {
+          "routeId": userRouteId  
+        },
+    }).promise();
+}
+ 
+function errorResponse(errorMessage, awsRequestId, callback) {
+  callback(null, {
+    statusCode: 500,
+    body: JSON.stringify({
+      Error: errorMessage,
+      Reference: awsRequestId,
+    }),
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+    },
+  });
+}
+```
+#### `MutateRoute()`:
+```
+const AWS = require('aws-sdk');
+const ddb = new AWS.DynamoDB.DocumentClient();
+const randomBytes = require('crypto').randomBytes;
+ 
+/*
+ * Parts of this are already in working order, and
+ * other parts (marked by "FILL THIS IN") need to be
+ * done by you.
+ * 
+ * For reference, here's a list of all the functions that
+ * you need to complete:
+ * - `getDistanceData()`
+ * - `getRouteById()`     
+ * - `generateChildren()`  
+ * - `addOneToGen()`   
+ * - `recordChildren()`    
+ * - `returnChildren`   
+ * - `computeDistance`  
+ */
+ 
+// This will be called in response to a POST request.
+// The routeId of the "parent" route will be
+// provided in the body, along with the number
+// of "children" (mutations) to make.
+// Each child will be entered into the database,
+// and we'll return an array of JSON objects
+// that contain the "child" IDs and the length
+// of those routes. To reduce computation on the
+// client end, we'll also sort these by length,
+// so the "shortest" route will be at the front
+// of the return array.
+//
+// Since all we'll get is the routeId, we'll need
+// to first get the full details of the route from
+// the DB. This will include the generation, and
+// we'll need to add one to that to create the
+// generation of all the children.
+exports.handler = (event, context, callback) => {
+    const requestBody = JSON.parse(event.body);
+    const routeId = requestBody.routeId;
+    const numChildren = requestBody.numChildren;
+    let lengthStoreThreshold = requestBody.lengthStoreThreshold;
+    if (lengthStoreThreshold == null) {
+        lengthStoreThreshold = Infinity;
+    }
+    
+    // Batch writes in DynamoDB are restricted to at most 25 writes.
+    // Because of that, I'm limiting this Lambda to only only handle
+    // at most 25 mutations so that I can write them all to the DB
+    // in a single batch write.
+    //
+    // If that irks you, you could create a function that creates
+    // and stores a batch of at most 25, and then call it multiple
+    // times to create the requested number of children. 
+    if (numChildren > 25) {
+        errorResponse("You can't generate more than 25 mutations at a time", context.awsRequestId, callback);
+        return;
+    }
+ 
+    // Promise.all makes these two requests in parallel, and only returns
+    // it's promise when both of them are complete. That is then sent
+    // into a `.then()` chain that passes the results of each previous
+    // step as the argument to the next step.
+    
+    Promise.all([getDistanceData(), getRouteById(routeId)])
+        .then(([distanceData, parentRoute]) => generateChildren(distanceData.Item, parentRoute.Item, numChildren))
+        .then(children => recordChildren(children, lengthStoreThreshold))
+        .then(children => returnChildren(callback, children))
+        .catch(err => {
+            console.log("Problem mutating given parent route");
+            console.error(err);
+            errorResponse(err.message, context.awsRequestId, callback);
+        });
+};
+ 
+/*
+Get the city-distance object for the region 'Minnesota'
+*/ 
+function getDistanceData() {
+    return ddb.get({
+        TableName: 'cityDistance_data',
+        Key: {region: 'Minnesota'}, 
+    }).promise();
+}
+ 
+function getRouteById(userRouteId){
+    return ddb.get({
+        TableName: 'evo-tsp-routes',
+        Key: {routeId: userRouteId}
+    }).promise();
+}
+ 
+// Generate an array of new routes, each of which is a mutation
+// of the given `parentRoute`. You essentially need to call
+// `generateChild` repeatedly (`numChildren` times) and return
+// the array of the resulting children. `generateChild` does
+// most of the heavy lifting here, and this function should
+// be quite short.
+function generateChildren(distanceData, parentRoute, numChildren) {
+    let arrayOfChildren = new Array();
+    for (let i=0; i<numChildren; i++){ //creating a child route based off of the parent route and putting it into spot i of the array
+        arrayOfChildren[i] = generateChild(distanceData, parentRoute); 
+    }
+    
+    return arrayOfChildren;
+    // You could just use a for-loop for this, or see
+    // https://stackoverflow.com/a/42306160 for a nice description of
+    // how to use of Array()/fill/map to generate the desired number of
+    // children.
+}
+ 
+// This is complete and you shouldn't need to change it. You
+// will need to implement `computeDistance()` and `addOneToGen()`
+// to get it to work, though.
+function generateChild(distanceData, parentRoute) {
+    const oldPath = parentRoute.route;
+    const numCities = oldPath.length;
+    // These are a pair of random indices into the path s.t.
+    // 0<=i<j<=N and j-i>2. The second condition ensures that the
+    // length of the "middle section" has length at least 2, so that
+    // reversing it actually changes the route. 
+    const [i, j] = genSwapPoints(numCities);
+    // The new "mutated" path is the old path with the "middle section"
+    // (`slice(i, j)`) reversed. This implements a very simple TSP mutation
+    // technique known as 2-opt (https://en.wikipedia.org/wiki/2-opt).
+    const newPath = 
+        oldPath.slice(0, i)
+            .concat(oldPath.slice(i, j).reverse(), 
+                    oldPath.slice(j));
+    const len = computeDistance(distanceData.distances, newPath);
+    const child = {
+        routeId: newId(),
+        runGen: addOneToGen(parentRoute.runGen),
+        route: newPath,
+        len: len,
+    };
+    return child;
+}
+ 
+// Generate a pair of random indices into the path s.t.
+// 0<=i<j<=N and j-i>2. The second condition ensures that the
+// length of the "middle section" has length at least 2, so that
+// reversing it actually changes the route. 
+function genSwapPoints(numCities) {
+    let i = 0;
+    let j = 0;
+    while (j-i < 2) {
+        i = Math.floor(Math.random() * numCities);
+        j = Math.floor(Math.random() * (numCities+1));
+    }
+    return [i, j];
+}
+ 
+// Take a runId-generation string (`oldRunGen`) and
+// return a new runId-generation string
+// that has the generation component incremented by
+// one. If, for example, we are given 'XYZ#17', we
+// should return 'XYZ#18'.  
+/*
+Adds one to the generation in the runGen. Grabs the index of 
+the #. Then creates substrings of the runId and generation.
+Turns the generation into a number value, adds one, then 
+creates a new string to be the updated runGen
+*/
+function addOneToGen(oldRunGen) {
+    const poundIndex = oldRunGen.indexOf("#");
+    const oldLength = oldRunGen.length;
+    const genString = oldRunGen.substring(poundIndex + 1, oldLength); //grabbing the generation to be added which is still a string
+    const genNumber = Number(genString); //the function Number() turns other types into a number
+    const nextGen = genNumber + 1;
+    
+    const oldRunId = oldRunGen.substring(0,poundIndex); //grabbing the runId
+    const newRunGen = oldRunId + '#' + nextGen;
+    return newRunGen;
+}
+ 
+// Write all the children whose length
+// is less than `lengthStoreThreshold` to the database. We only
+// write new routes that are shorter than the threshold as a
+// way of reducing the write load on the database, which makes
+// it (much) less likely that we'll have writes fail because we've
+// exceeded our default (free) provisioning.
+function recordChildren(children, lengthStoreThreshold) {
+    // Get just the children whose length is less than the threshold.
+    //It returns an array with elements that match the condition
+    const childrenToWrite = children.filter(child => child.len < lengthStoreThreshold);
+ 
+ 
+    // FILL IN THE REST OF THIS.
+    // You'll need to generate a batch request object (described
+    // in the write-up) and then call `ddb.batchWrite()` to write
+    // those children to the database.
+    let childrenObject = { //creating an object to be populated with routes
+      RequestItems:{
+          'evo-tsp-routes':[] //specifies the table 
+      }  
+    };
+    
+    childrenToWrite.forEach(element => addRouteToObject(element, childrenObject));
+    
+    //function(err,data) is what's called when a response from the service is returned
+    //If there were failed writes, we would get a semi-complex JSON object back
+    //For this project, we're assuming that all writes succeeded
+    //I referenced https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DynamoDB/DocumentClient.html#batchWrite-property
+    ddb.batchWrite(childrenObject, function(err, data) {
+        if (err) console.log(err);
+        else console.log(data);
+    }).promise();
+    
+    return childrenToWrite;
+ 
+    // After the `ddb.batchWrite()` has completed, make sure you
+    // return the `childrenToWrite` array.
+    // We only want to return _those_ children (i.e., those good
+    // enough to be written to the DB) instead of returning all
+    // the generated children.
+}
+ 
+/*
+A helper function that puts a child route from the childrenToWrite array into 
+the JSON object. The JSON object will be passed as a parameter to the. The method
+"push" puts a new object into an array. aRoute should have the fields 
+routeId, runGen, len (length) and route. So that's all I need when I say 
+Item: aRoute in the PutRequest
+I referenced this website: https://www.w3schools.com/jsref/jsref_foreach.asp
+*/
+function addRouteToObject(aRoute, childrenObject){
+    childrenObject.RequestItems['evo-tsp-routes'].push({ 
+        PutRequest: {
+            Item: aRoute
+        }
+    });
+}
+ 
+// Take the children that were good (short) enough to be written
+// to the database. 
+//
+//   * You should "simplify" each child, converting it to a new
+//     JSON object that only contains the `routeId` and `len` fields.
+//   * You should sort the simplified children by length, so the
+//     shortest is at the front of the array.
+//   * Use `callback` to "return" that array of children as the
+//     the result of this Lambda call, with status code 201 and
+//     the 'Access-Control-Allow-Origin' line. 
+function returnChildren(callback, children) {
+    const sortedChildren = children.sort(sortByProperty("len")); //sorting the array of child routes by their length
+    let simpleChildren = []; //creating an object to be populated with the routeId and length of child routes
+    
+    sortedChildren.forEach(child => addSimpleRouteToObject(child, simpleChildren));
+ 
+    callback(null,{
+       statusCode: 201,
+       body: JSON.stringify(simpleChildren), 
+       headers: {
+           'Access-Control-Allow-Origin': '*'
+       }
+    });
+}
+ 
+/*
+A helper function that puts the length and routeId of a child route into the 
+JSON object to be returned to the user
+*/
+function addSimpleRouteToObject(aRoute, simpleChildren){
+    simpleChildren.push({ 
+        routeId: aRoute.routeId,
+        len: aRoute.len,
+        route: aRoute.route,
+    
+    });
+}
+ 
+ 
+/*
+Sorts items in an array by a property. The property we're using is length.
+Referenced from this website:
+https://medium.com/@asadise/sorting-a-json-array-according-one-property-in-javascript-18b1d22cd9e9
+*/
+function sortByProperty(property){  
+   return function(a,b){  
+      if(a[property] > b[property])  
+         return 1;  
+      else if(a[property] < b[property])  
+         return -1;  
+  
+      return 0;  
+   };  
+}
+ 
+// Compute the length of the given route.
+// function computeDistance(distances, route) {
+//     // FILL THIS IN
+ 
+//     // REMEMBER TO INCLUDE THE COST OF GOING FROM THE LAST
+//     // CITY BACK TO THE FIRST!
+// }
+function computeDistance(distances, route){
+    let totalDistance = 0;
+    for (let i = 0; i < route.length; i++){
+        if (i == route.length-1){
+            const finalCity = route[i];
+            const startCity = route[0];
+            const homeTripDistance = distances[finalCity][startCity];
+            totalDistance = totalDistance + homeTripDistance;
+        }
+        else {
+            const city1 = route[i];
+            const city2 = route[i+1];
+            const aDistance = distances[city1][city2];
+            totalDistance = totalDistance + aDistance;
+        }
+    }
+    return totalDistance;
+}
+ 
+function newId() {
+    return toUrlString(randomBytes(16));
+}
+ 
+function toUrlString(buffer) {
+    return buffer.toString('base64')
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=/g, '');
+}
+ 
+function errorResponse(errorMessage, awsRequestId, callback) {
+  callback(null, {
+    statusCode: 500,
+    body: JSON.stringify({
+      Error: errorMessage,
+      Reference: awsRequestId,
+    }),
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+    },
+  });
+}
+```
