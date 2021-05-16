@@ -9,11 +9,11 @@
 - [User Documentation](#user-documentation)
 - [Table Structure](#table-structure)
 - [Lambda Functions](#lambda-functions)
-    - [GetCityData()](#cityData)  
-    - [GenerateRandomRoute()](#randomRoute)
-    - [GetRouteById()](#routeId)
-    - [GetBestRoutes()](#bestRoutes)
-    - [MutateRoute()](#mutateRoute)
+    - [GetCityData()](#getcitycata())  
+    - [GenerateRandomRoute()](#generaterandomroute())
+    - [GetRouteById()](#getroutebyid())
+    - [GetBestRoutes()](#getbestroutes())
+    - [MutateRoute()](#mutateRoute())
 - [API Details](#apiDetails)
     - [/best](#best)
     - [/city-data](#city)
@@ -54,15 +54,15 @@ The second table I made is called evo-tsp-routes. It starts out empty, but will 
 
 There are 5 lambda functions for this project. They are GetCityData, GenerateRandomRoute, GetRouteById, GetBestRoutes and MutateRoute. 
 
--   GetCityData: This function gets the information about the cities from the cityDistance_data table. Both sets of information about cities and distances are returned by this get request. Then in the exports.handler for the function, the cities portion of the object will be selected and then returned. If there were more regions in the table, there would likely have to be additional indexes and sort keys so the get request would then have been a query request.
+-   GetCityData(): This function gets the information about the cities from the cityDistance_data table. Both sets of information about cities and distances are returned by this get request. Then in the exports.handler for the function, the cities portion of the object will be selected and then returned. If there were more regions in the table, there would likely have to be additional indexes and sort keys so the get request would then have been a query request.
 
--   GenerateRandomRoute: This function has a helper method called generateRandomRoute. It is passed a Run ID, generation number, callback method and runGen. It gets the information about the distances between cities from the cityDistance_data table. Each city in the cityDistance_data table is associated with an index number. Those index numbers are put into an array and shuffled which creates a new route. The length of that route is then computed. Lastly, it uses a put request to put the new route (other info for the route was passed as parameters) in the evo-tsp-routes table.
+-   GenerateRandomRoute(): This function has a helper method called generateRandomRoute. It is passed a Run ID, generation number, callback method and runGen. It gets the information about the distances between cities from the cityDistance_data table. Each city in the cityDistance_data table is associated with an index number. Those index numbers are put into an array and shuffled which creates a new route. The length of that route is then computed. Lastly, it uses a put request to put the new route (other info for the route was passed as parameters) in the evo-tsp-routes table.
 
--   GetRouteById: In this function, a Route ID is passed to a helper function called getRouteById. It uses a get request on the evo-tsp-routes database with the Route ID specified. Since the evo-tsp-routes table has the Route ID as the partition key and Route IDs are unique, no other search parameters have to be used. Then all the information about that route (Route ID, runGen, length and the route of cities) is returned.
+-   GetRouteById(): In this function, a Route ID is passed to a helper function called getRouteById. It uses a get request on the evo-tsp-routes database with the Route ID specified. Since the evo-tsp-routes table has the Route ID as the partition key and Route IDs are unique, no other search parameters have to be used. Then all the information about that route (Route ID, runGen, length and the route of cities) is returned.
 
--   GetBestRoutes: This function uses the helper method getBestRoutes. It's passed a Run ID, generation and number of routes to return. It then queries the evo-tsp-routes table to return routes that have the same Run ID and generation. How many routes is specified by the number of routes to return. The routes that are returned have lengths below a certain length threshold (since we're trying to find the shortest routes) and are ordered in terms of their length. So if there are 10 routes returned, of those 10 routes, the first route is the shortest and tenth route is the longest. 
+-   GetBestRoutes(): This function uses the helper method getBestRoutes. It's passed a Run ID, generation and number of routes to return. It then queries the evo-tsp-routes table to return routes that have the same Run ID and generation. How many routes is specified by the number of routes to return. The routes that are returned have lengths below a certain length threshold (since we're trying to find the shortest routes) and are ordered in terms of their length. So if there are 10 routes returned, of those 10 routes, the first route is the shortest and tenth route is the longest. 
 
--   MutateRoute: This function gets distance data from the cityDistance_data table and gets a single route (acting as a parent route) from the evo-tsp-routes table. Then it generates a specified number of child routes and puts them into an array. The array is filtered so that only the child routes who have lengths below a certain threshold are kept. Then this new subset of child routes is turned into a JSON object and BatchWrite is used to put all the new child routes in the evo-tsp-routes table. Each child route has the same Run ID as the parent route, but the child route has a generation of the parent route's plus one. So if helloWorld#7 is the parent route, then a child route will have helloWorld#8.
+-   MutateRoute(): This function gets distance data from the cityDistance_data table and gets a single route (acting as a parent route) from the evo-tsp-routes table. Then it generates a specified number of child routes and puts them into an array. The array is filtered so that only the child routes who have lengths below a certain threshold are kept. Then this new subset of child routes is turned into a JSON object and BatchWrite is used to put all the new child routes in the evo-tsp-routes table. Each child route has the same Run ID as the parent route, but the child route has a generation of the parent route's plus one. So if helloWorld#7 is the parent route, then a child route will have helloWorld#8.
 
 ### API Details: 
 
