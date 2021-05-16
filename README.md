@@ -1584,7 +1584,7 @@ function errorResponse(errorMessage, awsRequestId, callback) {
           tileSize: 512,
           zoomOffset: -1,
           accessToken:
-            "pk.eyJ1IjoiYW5vdGhlcmFzaWFuZHVkZTI1IiwiYSI6ImNrb2F3NjF4bjAzOHYydW8ybzhpdXFna2sifQ.nJRNyoQ_H5BCNtt69QO1sA",
+            "(access token goes here)",
         }
       ).addTo(mymap);
     </script>
