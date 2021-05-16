@@ -55,8 +55,10 @@ Similar to the popup alert to signal the start of the simulation, there will be 
 ## Table Structure:
 
 The first table I made is called cityDistance_data. The primary key (and a field) of this table is "Region". There is only one object in the table with a partition key of "Minnesota". If we were to expand on this project, we could include other regions such as Kansas or Japan. The other two fields in this table are "cities" and "distances". The "cities" field holds information about cities in the region while "distances" holds information about the distance from each city to every other city. The data about cities is used by the GetCityData function to grab the location of each city to display on the map. The distance data is used by the GenerateRandomRoute and MutateRoute lambda functions in order to compute the length of routes.
+![](https://lh5.googleusercontent.com/Wo02HNM9OZEiEZoyae7FDb0ks1OiknBmsBNl-mIrn297RjODhbFLals6WUh78-F7U65DNHYbi0HA2Qh0fNL4XUOu9A2gKxUVRYn-sBCZMjyQlK062YeIs7Y3gHop7fLOZ9DuiEeP)
 
 The second table I made is called evo-tsp-routes. It starts out empty, but will be filled with routes when the application is run. Fields of this table are routeId, len (length), route and runGen. The runGen is the Run Id concatenated with # and then concatenated with the generation of the route. An example is helloWorld#2. So the Run ID is helloWorld and the generation the route came from is generation 2 of the simulation. The field "route" is an array that has a possible combination of the cities. So if there are a k number of cities in the cityDistances_data table, then "route" looks like a permutation of [0,1,...,k-1] where each number is an index that corresponds to a city in the cityDistances_data table. The partition key of evo-tsp-routes is the Route ID. Each Route ID is unique so making it the partition key makes grabbing a specific route easier. I added an index for this table called runGen-len-index. The primary key of the index is the runGen. Making runGen the partition key for the index allows us to specify the routes we want to grab from the table easier. All the routes in a simulation have the same Run ID, so if multiple simulations are run (with different Run IDs) we can quickly tell the table we want to see all the routes from a specific simulation. The secondary key of the index is the length of the route. Having length as the secondary key helps the GetBestRoutes lambda function filter out routes that have lengths above a certain threshold since our objective is to find routes with the shortest distance(s) possible.
+![](https://lh4.googleusercontent.com/mfy7qxf_rhByMpw11jqbFMmeYxfK_s5j0oF4nRukHIHokMCoSxrmfTODffws-jPTAFlG88WQyLDJTwrXJ7iJ2J_BgMboNqKHwbl_F0O0acvfSdTi3OnxfZGut2EWbyEicIgC9INb)
 
 ## About Lambda Functions:
 
@@ -84,7 +86,8 @@ This function gets distance data from the cityDistance_data table and gets a sin
 
 ## API Details: 
 
-For each lambda, I had to make a corresponding API resource and include methods to allow the lambdas to make their various requests.
+For each lambda, I had to make a corresponding API resource and include methods to allow the lambdas to make their various requests. 
+![](https://lh6.googleusercontent.com/zqXZjlN17xwbuLOBuwU90SSeBoacyGoCatnsIOlOOz4-vjngraSu7yL_ohjxv3E5KfIX06vAU1b6bN6th2KRxgNaRGIVQvBn-Le16ktkZvI2Rn_w_Ka1wVcRM4fKCClO30EJhh44)
 
 ###   `/best`: 
 
@@ -109,6 +112,7 @@ This resource path is associated with the GetRouteById lambda function. It has a
 ## IAM Roles:
 
 An IAM role will define other AWS services that can interact with the lambda functions. If this was a bigger scale project, I definitely would have created multiple specific roles, but for this project, I created a single IAM role on IAM AWS. There are 4 permissions needed from DynamoDB. Within the role, I created a new inline policy and after choosing the DynamoDB service, I added GetItem, Query, PutItem and BatchWriteItem as actions. A get request grabs a single item, so GetRouteById will now be able to grab a route's information from the evo-tsp-routes table. GetCityData will also use a get request to grab the object in the cityDistance_data table (as it is the only object in the table). A query request grabs a collection of items, so GetBestRoutes will now be able to request a certain number of routes with the same Run Id from the evo-tsp-routes table. GenerateRandomRoute can now use a put request to put a single route in the evo-tsp-routes table and MutateRoute can use BatchWrite to put up to 25 routes into the evo-tsp-routes table at a time.
+![](https://lh3.googleusercontent.com/d_CQA10Oxj94F_wsTCym-u2lgiVHnWw0sz8CPn01pK814dzKYx_dvy3OtlgsB6cYiWZVqadTZu1t39dW48W2cCYfvVw8JvaBTfIHxiG06kZ2bKlVRXNKjzAVPdVlsZBmKKTjylYA)
 
 ## Leaflet Details: 
 
